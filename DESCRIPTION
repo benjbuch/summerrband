@@ -1,0 +1,32 @@
+Package: summerr
+Type: Package
+Title: Analyse Gel-shift Assays
+Version: 0.0.1
+Authors@R: 
+    person(given = "Benjamin",
+           family = "Buchmuller",
+           role = c("aut", "cre"),
+           email = "benjamin.buchmuller@tu-dortmund.com",
+           comment = c(ORCID = "0000-0002-4915-5949"))
+Maintainer: Benjamin Buchmuller <benjamin.buchmuller@tu-dortmund.de>
+Description: This package contains a bundle of helper functions used across 
+    different repositories.
+License: GPL (>= 3)
+Encoding: UTF-8
+LazyData: true
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.1.1
+Imports:
+    data.table,
+    dplyr,
+    tidyr,
+    tidyselect,
+    tibble,
+    ggplot2,
+    scales,
+    forcats,
+    magrittr,
+    broom,
+    readr,
+    summerr
+Remotes: benjbuch/summerr
