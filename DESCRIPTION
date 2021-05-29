@@ -29,6 +29,8 @@ Imports:
     forcats,
     magrittr,
     broom,
-    readr,
-    summerr
+    readr
 Remotes: benjbuch/summerr
+Depends: 
+    R (>= 3.5.0),
+    summerr

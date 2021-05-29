@@ -18,3 +18,22 @@ utils::globalVariables(".")
 #' @docType package
 #' @name summerrband-package
 NULL
+
+#' Use a template for a IQTL/EMSA script
+#'
+#' @param version A template version identifier.
+#'
+#' @details
+#'
+#' \describe{
+#' \item{A01}{EMSA for selectivity}
+#' \item{A02}{EMSA for affinity}
+#' }
+#'
+#' @export
+use_template <- function(version = "A01") {
+
+  summerr::get_template(package = "summerrband", filename = "template",
+                        version = version)
+
+}

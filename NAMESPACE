@@ -3,6 +3,7 @@
 export(iqtl_meta)
 export(iqtl_read)
 export(iqtl_view)
+export(use_template)
 importFrom(data.table,":=")
 importFrom(magrittr,"%>%")
 importFrom(rlang,.data)
