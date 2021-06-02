@@ -32,3 +32,8 @@ exists, the data is assumed to be parallel to the result of \code{iqtl_read}.
 
 Internally, \code{meta_data} is converted to a \code{data.frame}.
 }
+\examples{
+assay_file <- system.file("extdata", "gel_01.txt", package = "summerrband")
+assay_data <- iqtl_meta(assay_file, list(conc = c(2^seq(10, 0), 0)))
+
+}

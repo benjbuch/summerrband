@@ -42,8 +42,8 @@ Reads a file exported with ImageQuant TL and performs basic actions to tidy
 up the format.
 }
 \examples{
-assaydata <- system.file("extdata", "gel_01.txt", package = "summerrband")
+assay_file <- system.file("extdata", "gel_01.txt", package = "summerrband")
 
-iqtl_read(assaydata)
+iqtl_read(assay_file)
 
 }

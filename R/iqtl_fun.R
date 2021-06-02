@@ -18,9 +18,9 @@
 #' A data frame of class \code{\link[data.table:data.table]{data.table}}.
 #'
 #' @examples
-#' assaydata <- system.file("extdata", "gel_01.txt", package = "summerrband")
+#' assay_file <- system.file("extdata", "gel_01.txt", package = "summerrband")
 #'
-#' iqtl_read(assaydata)
+#' iqtl_read(assay_file)
 #'
 #' @importFrom data.table :=
 #'
@@ -174,6 +174,10 @@ iqtl_view <- function(file, selected_bands = character(), ..., on_y_axis = "vol_
 #'
 #' @return
 #' A data frame of class \code{\link[data.table:data.table]{data.table}}.
+#'
+#' @examples
+#' assay_file <- system.file("extdata", "gel_01.txt", package = "summerrband")
+#' assay_data <- iqtl_meta(assay_file, list(conc = c(2^seq(10, 0), 0)))
 #'
 #' @export
 iqtl_meta <- function(file, meta_data = list(conc = NA), exclude = NULL, ...) {
