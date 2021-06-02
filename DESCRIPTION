@@ -29,7 +29,8 @@ Imports:
     forcats,
     magrittr,
     broom,
-    readr
+    readr,
+    minpack.lm
 Remotes: benjbuch/summerr
 Depends: 
     R (>= 3.5.0),
