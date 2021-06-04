@@ -116,7 +116,7 @@ fit_Kd <- function(x, formula, R0 = NaN, include_hill = FALSE,
 
   if (!include_hill) {
 
-    starts$hill <- NULL
+    start$hill <- NULL
     params$hill <- NULL
     FML <- do.call("substitute", list(FML, list(hill = 1)))
 
