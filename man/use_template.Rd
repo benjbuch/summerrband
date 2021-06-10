@@ -17,7 +17,7 @@ Use a template for a IQTL/EMSA script
 
 \item{A01}{EMSA with selectivity measurements}
 
-\item{A02}{EMSA for affinity}
+\item{A02}{EMSA with affinity measurements and Kd fitting}
 
 }
 }

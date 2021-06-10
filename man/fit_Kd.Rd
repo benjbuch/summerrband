@@ -33,7 +33,7 @@ used for fitting by default. See Details.}
 \item{include_hill}{If \code{TRUE}, a Hill coefficient is applied onto \code{R};
 not always appropiate.}
 
-\item{limits_lower, limits_upper, limits_hill, limits_Kd}{Upper and lower bounds
+\item{limits_lower, limits_upper, limits_hill, limits_K_d}{Upper and lower bounds
 for the paramters to be fitted.}
 
 \item{start}{A named list or named numeric vector of starting estimates. Guessed
@@ -82,7 +82,7 @@ minimum.
 \subsection{Choice of the fitting algorithm}{
 
 By default, \code{\link[minpack.lm:nlsLM]{minpack.lm::nlsLM}} is used as an
-alternative to base R's \code{\link[base:nls]{nls}}. You may consider using
+alternative to base R's \code{\link[stats:nls]{nls}}. You may consider using
 \code{nls.multstart::nls_multstart} with additional arguments via \code{...}
 to probe the dependence on different starting parameters.
 

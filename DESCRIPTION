@@ -1,7 +1,7 @@
 Package: summerrband
 Type: Package
 Title: Analyse Gel-shift Assays
-Version: 0.0.1
+Version: 1.0.0
 Authors@R: 
     person(given = "Benjamin",
            family = "Buchmuller",
@@ -28,9 +28,11 @@ Imports:
     scales,
     forcats,
     magrittr,
+    purrr,
     broom,
     readr,
-    minpack.lm
+    minpack.lm,
+    formula.tools
 Remotes: benjbuch/summerr
 Depends: 
     R (>= 3.5.0),

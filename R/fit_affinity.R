@@ -14,7 +14,7 @@
 #' used for fitting by default. See Details.
 #' @param include_hill If \code{TRUE}, a Hill coefficient is applied onto \code{R};
 #' not always appropiate.
-#' @param limits_lower,limits_upper,limits_hill,limits_Kd Upper and lower bounds
+#' @param limits_lower,limits_upper,limits_hill,limits_K_d Upper and lower bounds
 #' for the paramters to be fitted.
 #' @param ... Other arguments passed to the fitting algorithm \code{FUN}.
 #' @param FUN The function used as fitting algorithm; must return a non-linear model.
@@ -55,7 +55,7 @@
 #' \subsection{Choice of the fitting algorithm}{
 #'
 #' By default, \code{\link[minpack.lm:nlsLM]{minpack.lm::nlsLM}} is used as an
-#' alternative to base R's \code{\link[base:nls]{nls}}. You may consider using
+#' alternative to base R's \code{\link[stats:nls]{nls}}. You may consider using
 #' \code{nls.multstart::nls_multstart} with additional arguments via \code{...}
 #' to probe the dependence on different starting parameters.
 #'
@@ -136,7 +136,7 @@ fit_Kd <- function(x, formula, R0 = NaN, include_hill = FALSE,
 
   }
 
-  eval(rlang::call2(FUN, x, formula = as.formula(FML), lower = ll, upper = ul,
+  eval(rlang::call2(FUN, x, formula = stats::as.formula(FML), lower = ll, upper = ul,
                     start = start, ..., .ns = get0("PKG")))
 
 }

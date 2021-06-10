@@ -6,12 +6,23 @@
 \title{summerrband}
 \description{
 Analyze gel-shift assays.
+
+\subsection{Importing IQTL Data}{
+
+\link{iqtl_read}, \link{iqtl_meta}, \link{iqtl_import_all}
+
+\link{iqtl_view} to quickly view an IQTL file
+
+}
+
+\subsection{Workflows}{
+
+See \link{use_template} for workflows involving, e.g., fitting of Kd values (\link{fit_Kd}).
+
+}
 }
 \details{
 summerrband-package
-
-This package provides functions to evaluate gel-shift assays, e.g. to determine
-binding affinity.
 }
 \author{
 Benjamin Buchmuller \email{benjamin.buchmuller@tu-dortmund.de}

@@ -35,5 +35,4 @@ a warning.
 }
 \examples{
 
-
 }
