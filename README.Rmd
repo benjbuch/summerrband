@@ -1,0 +1,109 @@
+---
+output: github_document
+---
+
+<!-- README.md is generated from README.Rmd. Please edit that file -->
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.path = "man/figures/README-",
+  out.width = "100%"
+)
+```
+
+# summerrband
+
+<!-- badges: start -->
+<!-- badges: end -->
+
+`summerrband` plays for you gel-shift data from "tapes" recorded on Cytiva's 
+ImageQuant TL. Wherever the data comes from, once it's in a table (`data.frame`), 
+this package gives you also a handle on fitting dissociation constants in various
+ways.
+
+## Installation
+
+Since this package is not part of [CRAN](https://CRAN.R-project.org), you must 
+install and update the development version from [GitHub](https://github.com/) 
+with:
+
+``` r
+# install.packages("devtools")
+devtools::install_github("benjbuch/summerrband")
+```
+
+## Showcases
+
+```{r example}
+library(summerrband)
+```
+
+### A Song on Import-Me
+
+```{r import1, eval=TRUE, include=FALSE}
+my_file <- system.file("extdata", "gel_01.txt", package = "summerrband")
+```
+
+This is how a raw IQTL file looks like (truncated):
+
+```{r rawdata, echo=FALSE, message=FALSE, warning=FALSE}
+data.table::fread(my_file)[, 1:14]
+```
+
+This is how the same file will look like after tidy importing. As an extra benefit
+of calling `iqtl_view` instead of `iqtl_read`, we'll play a preview alongside:
+
+```{r tidydata}
+iqtl_view(my_file)
+```
+
+Let's assign some metadata along with the tunes:
+
+```{r import2}
+my_data <- iqtl_meta(my_file, meta_data = list(conc = c(2^seq(10, 0), 1),
+                                               protein = "protA",
+                                               ligand  = "DNA1"))
+
+head(my_data)
+```
+
+Of course, there is a batch function (`iqtl_import_all`) too.
+
+### Fitting the Tune and Tuning the Fit
+
+Four lines to sing:
+
+```{r fitting, warning=FALSE}
+library(magrittr)  # for the pipe operator
+
+my_data %>% 
+  dplyr::filter(band_id == "band_1") %>% 
+  dplyr::group_by(protein, ligand) %>% 
+  model_cleanly_groupwise(fit_Kd, formula = vol_frac ~ conc, 
+                          newdata = data.frame(conc = 10^seq(0, 3, length.out = 100))) %>% 
+  model_display(color = ligand) + ggplot2::facet_wrap(ggplot2::vars(protein))
+```
+
+```{r}
+my_data %>% 
+  dplyr::filter(band_id == "band_1") %>% 
+  dplyr::group_by(protein, ligand) %>% 
+  model_cleanly_groupwise(fit_Kd, formula = vol_frac ~ conc) %>% 
+  dplyr::select(tidy) %>% tidyr::unnest(tidy)
+```
+We can also employ a model that doesn't assume excess of the non-titrated species 
+R. So, when we provide its intial (total) concentration `R0` before the equilibrium 
+is reached:
+
+```{r}
+my_data %>% 
+  dplyr::filter(band_id == "band_1") %>% 
+  dplyr::group_by(protein, ligand) %>% 
+  model_cleanly_groupwise(fit_Kd, formula = vol_frac ~ conc, R0 = 2.0) %>% 
+  dplyr::select(tidy) %>% tidyr::unnest(tidy)
+```
+
+It is further possible to include a Hill slope if need be and to switch between
+differen fitting algorithms in R.
