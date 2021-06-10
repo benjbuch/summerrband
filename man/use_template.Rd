@@ -14,7 +14,10 @@ Use a template for a IQTL/EMSA script
 }
 \details{
 \describe{
-\item{A01}{EMSA for selectivity}
+
+\item{A01}{EMSA with selectivity measurements}
+
 \item{A02}{EMSA for affinity}
+
 }
 }
