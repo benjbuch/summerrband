@@ -16,8 +16,6 @@
 library(summerrband)
 library(tidyverse)
 
-gel_directory <- select_directory()
-
 # define probe sets (if needed)
 
 probe_set_1 <- CPG_COMBINATIONS[1:15]
@@ -43,15 +41,13 @@ gel_metadata <- list(
   NULL
 )
 
-data_emsa <- data.table::rbindlist(lapply(gel_metadata, function(
-  x, dir = gel_directory) iqtl_meta(file = file.path(dir, x$file),
-  meta_data = x[setdiff(names(x), c("file", "exclude"))], exclude = x$exclude)))
+data_emsa <- iqtl_import_all(gel_metadata, path = select_directory())
 
 data_emsa %>%
   filter(band_id == "band_1") %>%
   group_by(protein, conc) %>%
   # mutate(rel_frac = vol_frac / vol_frac[probe == "mC/mC"]) %>%
-  ggplot(aes(x = factor(probe, levels = probes),
+  ggplot(aes(x = factor(probe, levels = CPG_COMBINATIONS),
              y = vol_frac, fill = as.factor(conc))) +
   geom_col(position = "dodge") +
   labs(x = NULL, y = "fraction bound", fill = "concentration") +

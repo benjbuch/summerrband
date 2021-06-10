@@ -188,7 +188,7 @@ iqtl_meta <- function(file, meta_data = list(conc = NA), exclude = NULL, ...) {
 
     y <- dplyr::left_join(gel, data.frame(meta_data), by = "lane_id")
 
-  } else{
+  } else {
 
     y <- dplyr::left_join(gel, data.frame(meta_data,
                                           lane_id = levels(gel$lane_id)),
@@ -196,8 +196,44 @@ iqtl_meta <- function(file, meta_data = list(conc = NA), exclude = NULL, ...) {
 
   }
 
-  # exclude lanes when given
+  # exclude lanes when "exclude" given
 
   y[!(y$lane_id %in% exclude), ][]
+
+}
+
+#' Import IQTL files from a list
+#'
+#' Given a \code{list} or \code{data.frame} with an entry/column \code{file},
+#' this function feeds its arguments to \code{\link{iqtl_meta}}.
+#'
+#' @param l A list with descriptors. See examples.
+#' @param path A path in which all \code{file}s are residing. If \code{NULL},
+#' \code{file}s should be fully expanded paths or refer to the current working
+#' directory.
+#' @inheritDotParams iqtl_meta
+#'
+#' @details
+#' Entries named \code{.$file} or \code{.$exclude} are passed as separate arguments
+#' to \code{\link{iqtl_meta}}. All other entries of \code{l} are passed to
+#' \code{iqtl_meta} as if they were given as \code{meta_data} list.
+#'
+#' Empty entries are dropped without a warning. Missing files are dropped with
+#' a warning.
+#'
+#' @examples
+#'
+#'
+#' @export
+iqtl_import_all <- function(l, path = NULL, ...) {
+
+  l <- purrr::compact(l)  # drop empty entries
+
+  if (!is.null(path)) l <- purrr::map(l, ~ purrr::modify_in(
+    .x, "file", ~ file.path(path, .x)))
+
+  l %>%
+    purrr::map_dfr(~ iqtl_meta(file = .x$file, meta_data = .x[setdiff(
+      names(.x), c("file", "exclude"))]), exclude = .x$exclude, ... = ...)
 
 }
