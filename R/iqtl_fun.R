@@ -223,18 +223,18 @@ iqtl_meta <- function(file, meta_data = list(conc = NA), exclude = NULL, ...) {
 #'
 #' @examples
 #'
-#' @importFrom rlang .data
-#'
 #' @export
 iqtl_import_all <- function(l, path = NULL, ...) {
+
+  # visible binding for purrr variables
+  .x <- NULL
 
   l <- purrr::compact(l)  # drop empty entries
 
   if (!is.null(path)) l <- purrr::map(l, ~ purrr::modify_in(
-    .data$.x, "file", ~ file.path(path, .data$.x)))
+    .x, "file", ~ file.path(path, .x)))
 
-  l %>%
-    purrr::map_dfr(~ iqtl_meta(file = .data$.x$file, meta_data = .data$.x[setdiff(
-      names(.data$.x), c("file", "exclude"))]), exclude = .data$.x$exclude, ... = ...)
+  purrr::map_dfr(l, ~ iqtl_meta(file = .x$file, meta_data = .x[setdiff(
+    names(.x), c("file", "exclude"))]), exclude = .x$exclude, ... = ...)
 
 }
