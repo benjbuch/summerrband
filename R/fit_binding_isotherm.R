@@ -59,12 +59,12 @@ gpf_micro <- function(degree = 2, params = letters[seq(degree)], xname = "x", kn
 #'
 #' @details
 #' If \code{type == "macro"}, the binding isotherm is computed for a macroscopic
-#' process using \code{\link{macro_gpf}}. The entries are assumed to be in ascending
+#' process using \code{\link{gpf_macro}}. The entries are assumed to be in ascending
 #' order, i.e., \code{binding_constants[2]} gives the apparent thermodynamic binding
 #' constant for associating the second ligand.
 #'
 #' If \code{type == "micro"} the vector must contain the (named) microsocopic
-#' binding constants compatible with \code{\link{micro_gpf}}. Note that in this
+#' binding constants compatible with \code{\link{gpf_micro}}. Note that in this
 #' case, the entries are assumed to be in combinatorically increasing order,
 #' i.e., "a", "b", "c", "ab", "ac", "bc", "abc", for a third degree polynom.
 #' The entries can be named, but the names are not used for the assignment due
@@ -135,6 +135,7 @@ gpf_fraction_bound <- function(x, binding_constants, type = "macro") {
 
 #' Quick overview plots
 #'
+#' @noRd
 gpf_fraction_plot <- function(x = 10^seq(-6, 2, length.out = 100), ...) {
 
   y <- gpf_fraction_bound(x = x, ...)
@@ -151,6 +152,7 @@ gpf_fraction_plot <- function(x = 10^seq(-6, 2, length.out = 100), ...) {
 
 #' Quick overview plots to demonstrate harmonic mean
 #'
+#' @noRd
 gpf_fraction_micro_macro <- function(a, b, c = 0, x = 10^seq(-6, 2, length.out = 100)) {
 
   K1 = a + b + c
