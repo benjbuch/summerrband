@@ -193,6 +193,7 @@ gpf_fraction_micro_macro <- function(a, b, c = 0, x = 10^seq(-6, 2, length.out =
 #' Fit binding isotherm
 #'
 #' @inheritParams fit_Kd
+#' @inheritParams gpf_fraction_bound
 #' @param degree The order of the binding polynomial; if \code{NULL} it is inferred
 #' from the number of variables on the LHS of \code{formula}. Up to third order
 #' binding polynomials are supported.
@@ -206,11 +207,16 @@ gpf_fraction_micro_macro <- function(a, b, c = 0, x = 10^seq(-6, 2, length.out =
 #' used to determine the binding degree: \code{bound_1 + 2 * bound_2 ~ conc}
 #' indicates a second degree binding polynom.
 #'
-#' Currently up to third degree binding is supported. The microscopic binding
-#' constants are inferred from the macroscopic ones as harmonic means.
+#' If \code{type == "macro"}, the binding isotherm is computed for a macroscopic
+#' (thermodynamic) process using \code{\link{gpf_macro}}. If \code{type == "micro"},
+#' the intrinsic binding constants of the individual binding sites are computed
+#' temptatively using harmonic means.
 #'
-#' Note that we log-transform all K_d values to allow for an equal search depth
-#' across all orders of magnitude using \link[nls.multstart:nls_multstart]{nls.multstart::nls_multstart}.
+#' Up to third order binding polynoms can be computed.
+#'
+#' Note that all K_d values are internally log-transformed and returned as such
+#' to allow for an equal search depth across all orders of magnitude using
+#' \link[nls.multstart:nls_multstart]{nls.multstart::nls_multstart}.
 #'
 #' @examples
 #' library(dplyr)
@@ -230,7 +236,7 @@ gpf_fraction_micro_macro <- function(a, b, c = 0, x = 10^seq(-6, 2, length.out =
 #' model_display(test3) + scale_x_log10()
 #'
 #' @export
-fit_binding_isotherm <- function(x, formula, degree = NULL,
+fit_binding_isotherm <- function(x, formula, degree = NULL, type = "micro",
                                  limits_lower = c(-Inf, +Inf), limits_upper = c(-Inf, +Inf),
                                  limits_K_d = c(0, 1e3), start_K_d = 10^c(-1, 4)) {
 
@@ -238,32 +244,46 @@ fit_binding_isotherm <- function(x, formula, degree = NULL,
 
   x <- dplyr::mutate(.data = x, RL = !!formula.tools::lhs(formula))
 
+  # determine degree of binding polynom to fit
+
   if (is.null(degree)) degree <- length(formula.tools::lhs.vars(formula))
 
-  stopifnot(all(is.finite(degree), is.integer(degree), degree <= 3))
+  degree <- as.integer(degree)
+
+  stopifnot(all(is.finite(degree), degree <= 3))
+
+  # construct formula to fit
 
   L0 <- formula.tools::rhs(formula)
 
-  FML <- substitute(RL ~ RL_isotherm(conc_L = L0, pK_d1, pK_d2, pK_d3, upper, lower),
-                    list(L0 = L0))
+  FML <- substitute(RL ~ RL_isotherm(conc_L = L0, pK_d1, pK_d2, pK_d3, upper, lower,
+                                     type = T0),
+                    list(L0 = L0, T0 = type))
 
-  RL_isotherm <- function(conc_L, pK_d1, pK_d2, pK_d3, upper, lower) {
+  RL_isotherm <- function(conc_L, pK_d1, pK_d2, pK_d3, upper, lower, type = "macro") {
 
     # use log-transformed K_d to allow equal search space of nls_multstart
 
-    a = 10^(-pK_d1)
-    b = 10^(-pK_d2)
-    c = 10^(-pK_d3)
-    ab = 2 * a * b
-    ac = 2 * a * c
-    bc = 2 * b * c
-    abc = 6 * a * b * c
+    if (type == "micro") {
 
-    micro <- c(a = a, b = b, c = c, ab = ab, ac = ac, bc = bc, abc = abc)
+      a = 10^(-pK_d1)
+      b = 10^(-pK_d2)
+      c = 10^(-pK_d3)
+      ab = 2 * a * b
+      ac = 2 * a * c
+      bc = 2 * b * c
+      abc = 6 * a * b * c
+
+      params <- c(a = a, b = b, c = c, ab = ab, ac = ac, bc = bc, abc = abc)
+
+    } else {
+
+      params <- c(K1 = 10^(-pK_d1), K2 = 10^(-pK_d2), K3 = 10^(-pK_d3))
+
+    }
 
     lower + (upper - lower) * gpf_fraction_bound(
-      x = conc_L, binding_constants = micro,
-      type = "micro")
+      x = conc_L, binding_constants = params, type = type)
 
   }
 

@@ -8,6 +8,7 @@ fit_binding_isotherm(
   x,
   formula,
   degree = NULL,
+  type = "micro",
   limits_lower = c(-Inf, +Inf),
   limits_upper = c(-Inf, +Inf),
   limits_K_d = c(0, 1000),
@@ -25,6 +26,8 @@ of the complex \eqn{[RL]_0}, and \code{L0} the concentration of titrated species
 \item{degree}{The order of the binding polynomial; if \code{NULL} it is inferred
 from the number of variables on the LHS of \code{formula}. Up to third order
 binding polynomials are supported.}
+
+\item{type}{Either \code{"micro"} or \code{"macro"} (default).}
 
 \item{limits_lower}{Upper and lower bounds
 for the paramters to be fitted.}
@@ -48,11 +51,16 @@ are accepted and even preferred as the number of variables in the LHS will be
 used to determine the binding degree: \code{bound_1 + 2 * bound_2 ~ conc}
 indicates a second degree binding polynom.
 
-Currently up to third degree binding is supported. The microscopic binding
-constants are inferred from the macroscopic ones as harmonic means.
+If \code{type == "macro"}, the binding isotherm is computed for a macroscopic
+(thermodynamic) process using \code{\link{gpf_macro}}. If \code{type == "micro"},
+the intrinsic binding constants of the individual binding sites are computed
+temptatively using harmonic means.
 
-Note that we log-transform all K_d values to allow for an equal search depth
-across all orders of magnitude using \link[nls.multstart:nls_multstart]{nls.multstart::nls_multstart}.
+Up to third order binding polynoms can be computed.
+
+Note that all K_d values are internally log-transformed and returned as such
+to allow for an equal search depth across all orders of magnitude using
+\link[nls.multstart:nls_multstart]{nls.multstart::nls_multstart}.
 }
 \examples{
 library(dplyr)
