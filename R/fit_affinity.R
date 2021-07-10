@@ -137,10 +137,10 @@ fit_Kd <- function(x, formula, R0 = NaN, include_hill = FALSE,
 
   if (!is.null(start) && start == "auto") {
 
-    start <- list(hill = 1, lower = 0, upper = max(x[[RL]],
-                                                   na.rm = TRUE),
-                  K_d = x[[L0]][which.min(abs(
-                    x[[RL]] - 0.5 * max(x[[RL]], na.rm = TRUE)))])
+    starts <- list(hill = 1, lower = 0, upper = max(x[[RL]],
+                                                    na.rm = TRUE),
+                   K_d = x[[L0]][which.min(abs(
+                     x[[RL]] - 0.5 * max(x[[RL]], na.rm = TRUE)))])
 
   }
 
@@ -149,7 +149,7 @@ fit_Kd <- function(x, formula, R0 = NaN, include_hill = FALSE,
 
   if (!include_hill) {
 
-    start$hill <- NULL
+    starts$hill <- NULL
     params$hill <- NULL
     FML <- do.call("substitute", list(FML, list(hill = 1)))
 
@@ -181,7 +181,7 @@ fit_Kd <- function(x, formula, R0 = NaN, include_hill = FALSE,
 
     eval(rlang::call2(FUN, x, formula = stats::as.formula(FML),
                       lower = ll, upper = ul,
-                      start = start, ..., .ns = get0("PKG")))
+                      start = starts, ..., .ns = get0("PKG")))
 
   }
 
