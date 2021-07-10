@@ -125,7 +125,7 @@ fit_Kd <- function(x, formula, R0 = NaN, include_hill = FALSE,
   if (is.finite(R0)) {
 
     FML <- substitute(RL ~ I(lower + (upper - lower) * ((R0 + L0^hill + K_d) - sqrt(
-      (R0 + L0^hill + K_d)^2 - 4 * R0 * L0^hill)) / (2 * R0)),
+      (R0 + L0^hill + K_d)^2 - 4 * R0 * L0^hill)) / 2),
       list(R0 = R0, RL = RL, L0 = L0))
 
   } else {
