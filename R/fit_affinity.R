@@ -57,16 +57,21 @@
 #' By default, \code{\link[minpack.lm:nlsLM]{minpack.lm::nlsLM}} is used as an
 #' alternative to base R's \code{\link[stats:nls]{nls}}. You may consider using
 #' \code{nls.multstart::nls_multstart} with additional arguments via \code{...}
-#' to probe the dependence on different starting parameters.
+#' to probe the dependence on different starting parameters. (See Examples.)
 #'
 #' }
 #'
 #' \subsection{Choice of starting values}{
 #'
-#' Starting values are guessed from the data; by default: \code{lower} is zero,
-#' \code{upper} is the maximum of \eqn{[RL]} (LHS of \code{formula}), \code{hill},
-#' if present, is 1, \code{K_d} is value of \eqn{[L]_0} (RHS of \code{formula})
+#' Starting values are guessed from the data if \code{"auto"}; by default:
+#' \code{lower} is zero,
+#' \code{upper} is the maximum of \eqn{[RL]} (LHS of \code{formula}),
+#' \code{hill}, if present, is 1,
+#' \code{K_d} is value of \eqn{[L]_0} (RHS of \code{formula})
 #' which is closest to the half-maximal value of \eqn{[RL]}.
+#'
+#' You must set \code{start = NULL} with certain \code{FUN}, e.g. when using
+#' \code{FUN = "nls.multstart::nls_multstart"}.
 #'
 #' }
 #'
@@ -77,17 +82,41 @@
 #'
 #' assay_data %>%
 #'   filter(band_id == "band_1") %>%
-#'   fit_Kd(vol_frac ~ conc, include_hill = TRUE, R0 = 2) %>%
+#'   fit_Kd(vol_frac ~ conc, include_hill = FALSE, R0 = 2) %>%
 #'   broom::tidy()
 #'
 #' assay_data %>%
 #'   group_by(band_id) %>%
 #'   summerr::model_cleanly_groupwise(fit_Kd, formula = vol_frac ~ conc)
 #'
+#' library(ggplot2)
+#'
+#' assay_data %>%
+#'   group_by(band_id) %>%
+#'   summerr::model_cleanly_groupwise(fit_Kd, formula = vol_frac ~ conc) %>%
+#'   summerr::model_display(color = band_id) +
+#'   scale_x_log10()
+#'
+#' # Other fitting algorithms
+#'
+#' assay_data %>%
+#'   filter(band_id == "band_1") %>%
+#'   fit_Kd(vol_frac ~ conc, include_hill = FALSE, R0 = 2, FUN = "nls", algorithm = "port") %>%
+#'   broom::tidy()
+#'
+#' assay_data %>%
+#'   filter(band_id == "band_1") %>%
+#'   fit_Kd(vol_frac ~ conc, include_hill = FALSE, R0 = 2,
+#'     FUN = "nls.multstart::nls_multstart", start = NULL,  ## important!
+#'     iter = 500,
+#'     start_lower = c(lower = 0,   upper = 0.5, K_d = 1e-3),
+#'     start_upper = c(lower = 0.5, upper = 1.0, K_d = 1e3)) %>%
+#'   broom::tidy()
+#'
 #' @export
 fit_Kd <- function(x, formula, R0 = NaN, include_hill = FALSE,
                    limits_lower = c(-Inf, +Inf), limits_upper = c(-Inf, +Inf),
-                   limits_hill = c(-Inf, +Inf), limits_K_d = c(0, 1e3), start = NULL,
+                   limits_hill = c(-Inf, +Inf), limits_K_d = c(0, 1e3), start = "auto",
                    ..., FUN = "minpack.lm::nlsLM") {
 
   RL <- formula.tools::lhs(formula)
@@ -96,7 +125,7 @@ fit_Kd <- function(x, formula, R0 = NaN, include_hill = FALSE,
   if (is.finite(R0)) {
 
     FML <- substitute(RL ~ I(lower + (upper - lower) * ((R0 + L0^hill + K_d) - sqrt(
-      (R0 + L0^hill + K_d)^2 - 4 * R0 * L0^hill)) / 2),
+      (R0 + L0^hill + K_d)^2 - 4 * R0 * L0^hill)) / (2 * R0)),
       list(R0 = R0, RL = RL, L0 = L0))
 
   } else {
@@ -106,10 +135,14 @@ fit_Kd <- function(x, formula, R0 = NaN, include_hill = FALSE,
 
   }
 
-  if (is.null(start)) start <- list(hill = 1, lower = 0, upper = max(x[[RL]],
-                                                                     na.rm = TRUE),
-                                    K_d = x[[L0]][which.min(abs(
-                                      x[[RL]] - 0.5 * max(x[[RL]], na.rm = TRUE)))])
+  if (!is.null(start) && start == "auto") {
+
+    start <- list(hill = 1, lower = 0, upper = max(x[[RL]],
+                                                   na.rm = TRUE),
+                  K_d = x[[L0]][which.min(abs(
+                    x[[RL]] - 0.5 * max(x[[RL]], na.rm = TRUE)))])
+
+  }
 
   params <- list(hill = limits_hill, lower = limits_lower, upper = limits_upper,
                  K_d = limits_K_d)
@@ -136,8 +169,21 @@ fit_Kd <- function(x, formula, R0 = NaN, include_hill = FALSE,
 
   }
 
-  eval(rlang::call2(FUN, x, formula = stats::as.formula(FML), lower = ll, upper = ul,
-                    start = start, ..., .ns = get0("PKG")))
+  if (is.null(start)) {
+
+    # this allows compatibility with "nls.multstart::nls_multstart"
+
+    eval(rlang::call2(FUN, x, formula = stats::as.formula(FML),
+                      lower = ll, upper = ul,
+                      ..., .ns = get0("PKG")))
+
+  } else {
+
+    eval(rlang::call2(FUN, x, formula = stats::as.formula(FML),
+                      lower = ll, upper = ul,
+                      start = start, ..., .ns = get0("PKG")))
+
+  }
 
 }
 
