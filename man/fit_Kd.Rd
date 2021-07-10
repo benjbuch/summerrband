@@ -13,7 +13,7 @@ fit_Kd(
   limits_upper = c(-Inf, +Inf),
   limits_hill = c(-Inf, +Inf),
   limits_K_d = c(0, 1000),
-  start = NULL,
+  start = "auto",
   ...,
   FUN = "minpack.lm::nlsLM"
 )
@@ -53,7 +53,7 @@ the concentration \eqn{[L]} (dose).
 If \code{R0} is a numeric value, the total concentration of the species that
 is not titrated in the assay, the following quadratic equation is fitted:
 
-\deqn{[RL] = 1/2 * ([R]_0 + [L]_0 + K_d - (([R]_0 + [L]_0 + K_d)^2 - 4 [R]_0 [L]_0)^(1/2))}
+\deqn{[RL] = 1/(2 [R]_0) * ([R]_0 + [L]_0 + K_d - (([R]_0 + [L]_0 + K_d)^2 - 4 [R]_0 [L]_0)^(1/2))}
 
 else
 
@@ -84,16 +84,21 @@ minimum.
 By default, \code{\link[minpack.lm:nlsLM]{minpack.lm::nlsLM}} is used as an
 alternative to base R's \code{\link[stats:nls]{nls}}. You may consider using
 \code{nls.multstart::nls_multstart} with additional arguments via \code{...}
-to probe the dependence on different starting parameters.
+to probe the dependence on different starting parameters. (See Examples.)
 
 }
 
 \subsection{Choice of starting values}{
 
-Starting values are guessed from the data; by default: \code{lower} is zero,
-\code{upper} is the maximum of \eqn{[RL]} (LHS of \code{formula}), \code{hill},
-if present, is 1, \code{K_d} is value of \eqn{[L]_0} (RHS of \code{formula})
+Starting values are guessed from the data if \code{"auto"}; by default:
+\code{lower} is zero,
+\code{upper} is the maximum of \eqn{[RL]} (LHS of \code{formula}),
+\code{hill}, if present, is 1,
+\code{K_d} is value of \eqn{[L]_0} (RHS of \code{formula})
 which is closest to the half-maximal value of \eqn{[RL]}.
+
+You must set \code{start = NULL} with certain \code{FUN}, e.g. when using
+\code{FUN = "nls.multstart::nls_multstart"}.
 
 }
 }
@@ -104,11 +109,35 @@ assay_data <- iqtl_meta(assay_file, list(conc = c(2^seq(10, 0), 0)))
 
 assay_data \%>\%
   filter(band_id == "band_1") \%>\%
-  fit_Kd(vol_frac ~ conc, include_hill = TRUE, R0 = 2) \%>\%
+  fit_Kd(vol_frac ~ conc, include_hill = FALSE, R0 = 2) \%>\%
   broom::tidy()
 
 assay_data \%>\%
   group_by(band_id) \%>\%
   summerr::model_cleanly_groupwise(fit_Kd, formula = vol_frac ~ conc)
+
+library(ggplot2)
+
+assay_data \%>\%
+  group_by(band_id) \%>\%
+  summerr::model_cleanly_groupwise(fit_Kd, formula = vol_frac ~ conc) \%>\%
+  summerr::model_display(color = band_id) +
+  scale_x_log10()
+
+# Other fitting algorithms
+
+assay_data \%>\%
+  filter(band_id == "band_1") \%>\%
+  fit_Kd(vol_frac ~ conc, include_hill = FALSE, R0 = 2, FUN = "nls", algorithm = "port") \%>\%
+  broom::tidy()
+
+assay_data \%>\%
+  filter(band_id == "band_1") \%>\%
+  fit_Kd(vol_frac ~ conc, include_hill = FALSE, R0 = 2,
+    FUN = "nls.multstart::nls_multstart", start = NULL,  ## important!
+    iter = 500,
+    start_lower = c(lower = 0,   upper = 0.5, K_d = 1e-3),
+    start_upper = c(lower = 0.5, upper = 1.0, K_d = 1e3)) \%>\%
+  broom::tidy()
 
 }

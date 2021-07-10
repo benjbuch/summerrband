@@ -26,7 +26,7 @@
 #' If \code{R0} is a numeric value, the total concentration of the species that
 #' is not titrated in the assay, the following quadratic equation is fitted:
 #'
-#' \deqn{[RL] = 1/2 * ([R]_0 + [L]_0 + K_d - (([R]_0 + [L]_0 + K_d)^2 - 4 [R]_0 [L]_0)^(1/2))}
+#' \deqn{[RL] = 1/(2 [R]_0) * ([R]_0 + [L]_0 + K_d - (([R]_0 + [L]_0 + K_d)^2 - 4 [R]_0 [L]_0)^(1/2))}
 #'
 #' else
 #'
