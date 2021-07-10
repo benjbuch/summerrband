@@ -142,6 +142,10 @@ fit_Kd <- function(x, formula, R0 = NaN, include_hill = FALSE,
                    K_d = x[[L0]][which.min(abs(
                      x[[RL]] - 0.5 * max(x[[RL]], na.rm = TRUE)))])
 
+  } else {
+
+    starts <-  start
+
   }
 
   params <- list(hill = limits_hill, lower = limits_lower, upper = limits_upper,

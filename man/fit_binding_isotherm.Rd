@@ -11,7 +11,7 @@ fit_binding_isotherm(
   limits_lower = c(-Inf, +Inf),
   limits_upper = c(-Inf, +Inf),
   limits_K_d = c(0, 1000),
-  start_pK_d = c(-1, 4)
+  start_K_d = 10^c(-1, 4)
 )
 }
 \arguments{
@@ -36,7 +36,7 @@ for the paramters to be fitted.}
 for the paramters to be fitted.}
 
 \item{start_K_d}{Upper and lower bounds of the K_d grid-start
-parameters (see \link{nls.multstart::nls_multstart}).}
+parameters (see \link[nls.multstart:nls_multstart]{nls.multstart::nls_multstart}).}
 }
 \description{
 Fit binding isotherm
@@ -52,7 +52,7 @@ Currently up to third degree binding is supported. The microscopic binding
 constants are inferred from the macroscopic ones as harmonic means.
 
 Note that we log-transform all K_d values to allow for an equal search depth
-across all orders of magnitude using \link{nls.multstart::nls_multstart}.
+across all orders of magnitude using \link[nls.multstart:nls_multstart]{nls.multstart::nls_multstart}.
 }
 \examples{
 library(dplyr)
@@ -61,12 +61,14 @@ assay_data <- iqtl_meta(assay_file, list(conc = c(2^seq(10, 0), 0)))
 
 test3 <- assay_data \%>\%
   group_by(gel_id) \%>\%
-  pivot_wider(names_from = band_id, values_from = vol_frac,
+  tidyr::pivot_wider(names_from = band_id, values_from = vol_frac,
   id_cols = c(conc, group_vars(.))) \%>\%
   model_cleanly_groupwise(fit_binding_isotherm, formula = band_1 + 2 * band_2 ~ conc,
                           newdata = data.frame(conc = 10^seq(-3, 3, length.out = 100)))
 
 tidyr::unnest(test3, tidy)
+
+library(ggplot2)
 model_display(test3) + scale_x_log10()
 
 }
