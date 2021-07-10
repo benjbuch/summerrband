@@ -37,7 +37,7 @@ not always appropiate.}
 for the paramters to be fitted.}
 
 \item{start}{A named list or named numeric vector of starting estimates. Guessed
-from the data if \code{NULL}.}
+from the data if \code{"auto"}; not passed if \code{NULL}.}
 
 \item{...}{Other arguments passed to the fitting algorithm \code{FUN}.}
 

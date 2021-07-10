@@ -20,7 +20,7 @@
 #' @param FUN The function used as fitting algorithm; must return a non-linear model.
 #' Can be an unquoted function, but must be a character if prefixed as "package::function".
 #' @param start A named list or named numeric vector of starting estimates. Guessed
-#' from the data if \code{NULL}.
+#' from the data if \code{"auto"}; not passed if \code{NULL}.
 #'
 #' @details
 #' If \code{R0} is a numeric value, the total concentration of the species that
@@ -186,4 +186,3 @@ fit_Kd <- function(x, formula, R0 = NaN, include_hill = FALSE,
   }
 
 }
-
