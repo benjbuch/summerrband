@@ -194,6 +194,9 @@ gpf_fraction_micro_macro <- function(a, b, c = 0, x = 10^seq(-6, 2, length.out =
 #'
 #' @inheritParams fit_Kd
 #' @inheritParams gpf_fraction_bound
+#' @param INDEX A column variable that shall be used to split the data into at
+#' most two sets, for which both will share higher order K. You will get other
+#' estimates as .x and .y fits.
 #' @param degree The order of the binding polynomial; if \code{NULL} it is inferred
 #' from the number of variables on the LHS of \code{formula}. Up to third order
 #' binding polynomials are supported.
@@ -211,6 +214,12 @@ gpf_fraction_micro_macro <- function(a, b, c = 0, x = 10^seq(-6, 2, length.out =
 #' (thermodynamic) process using \code{\link{gpf_macro}}. If \code{type == "micro"},
 #' the intrinsic binding constants of the individual binding sites are computed
 #' temptatively using harmonic means.
+#'
+#' The grid start approach will take 540 points across all model estimates.
+#'
+#' If \code{INDEX} is a column name, the data is internally split into (exactly)
+#' two groups, for which the higher order K are shared. Note that the grid start
+#' approach will take 1296 points and computation may take longer.
 #'
 #' Up to third order binding polynoms can be computed.
 #'
@@ -235,31 +244,30 @@ gpf_fraction_micro_macro <- function(a, b, c = 0, x = 10^seq(-6, 2, length.out =
 #' library(ggplot2)
 #' model_display(test3) + scale_x_log10()
 #'
+#' # fitting with shared estimates
+#' assay_data_2 <- assay_data %>%
+#'   group_by(gel_id) %>%
+#'   tidyr::pivot_wider(names_from = band_id, values_from = vol_frac,
+#'   id_cols = c(conc, group_vars(.))) %>%
+#'   mutate(index_col = rep(c("a", "b"), times = 6))
+#'
+#' # these examples will take some computation time ...
+#' #
+#' # fit_binding_isotherm(assay_data_2, formula = band_1 + 2 * band_2 ~ conc, INDEX = index_col)
+#' #
+#' # test4 <- assay_data_2 %>%
+#' #   model_cleanly_groupwise(fit_binding_isotherm, formula = band_1 + 2 * band_2 ~ conc,
+#' #                           INDEX = index_col,
+#' #                           newdata = data.frame(conc = 10^seq(-3, 3, length.out = 100)))
+#' # }
+#'
 #' @export
-fit_binding_isotherm <- function(x, formula, degree = NULL, type = "micro",
+fit_binding_isotherm <- function(x, formula, degree = NULL, type = "micro", INDEX = NULL,
                                  limits_lower = c(-Inf, +Inf), limits_upper = c(-Inf, +Inf),
                                  limits_K_d = c(0, 1e3), start_K_d = 10^c(-1, 4)) {
 
-  # generate observed binding isotherm according to formula virtually
-
-  x <- dplyr::mutate(.data = x, RL = !!formula.tools::lhs(formula))
-
-  # determine degree of binding polynom to fit
-
-  if (is.null(degree)) degree <- length(formula.tools::lhs.vars(formula))
-
-  degree <- as.integer(degree)
-
-  stopifnot(all(is.finite(degree), degree <= 3))
-
-  # construct formula to fit
-
-  L0 <- formula.tools::rhs(formula)
-
-  FML <- substitute(RL ~ RL_isotherm(conc_L = L0, pK_d1, pK_d2, pK_d3, upper, lower,
-                                     type = T0),
-                    list(L0 = L0, T0 = type))
-
+  # function to fit an isotherm
+  #
   RL_isotherm <- function(conc_L, pK_d1, pK_d2, pK_d3, upper, lower, type = "macro") {
 
     # use log-transformed K_d to allow equal search space of nls_multstart
@@ -287,15 +295,104 @@ fit_binding_isotherm <- function(x, formula, degree = NULL, type = "micro",
 
   }
 
-  starts <- list(lower = c(0, 0.2), upper = c(0.5, 1.0),
-                 pK_d1 = log10(start_K_d), pK_d2 = log10(start_K_d),
-                 pK_d3 = log10(start_K_d))
+  # function to fit an isotherm with shared pK_d2 and pK_d3
+  #
+  RL_isotherm_shared <- function(conc_L, INDEX = NULL,
+                                 pK_d1.x, pK_d1.y = pK_d1.x, pK_d2, pK_d3,
+                                 upper.x, lower.x,
+                                 upper.y = upper.x, lower.y = lower.y,
+                                 type = "macro") {
 
-  iters <- list(lower = 3, upper = 3, pK_d1 = 5, pK_d2 = 4, pK_d3 = 3)
+    INDEX <- as.factor(INDEX)
 
-  params <- list(lower = limits_lower, upper = limits_upper,
-                 pK_d1 = log10(limits_K_d), pK_d2 = log10(limits_K_d),
-                 pK_d3 = log10(limits_K_d))
+    if (length(levels(INDEX)) == 2) {
+
+      conc_L <- split(conc_L, INDEX, drop = FALSE)
+
+      rlx <- RL_isotherm(conc_L[[1]], pK_d1.x, pK_d2, pK_d3, upper.x, lower.x, type = type)
+      rly <- RL_isotherm(conc_L[[2]], pK_d1.y, pK_d2, pK_d3, upper.y, lower.y, type = type)
+
+      res <- list(rlx, rly)
+      names(res) <- names(conc_L)
+
+      res <- unsplit(res, INDEX, drop = TRUE)
+
+    } else {
+
+      if(length(levels(INDEX)) > 2) warning("Data splits into more than 2 groups;
+                                             not grouping at all now.")
+
+      res <- RL_isotherm(conc_L, pK_d1.x, pK_d2, pK_d3, upper.x, lower.x, type = type)
+
+    }
+
+    res
+
+  }
+
+  # generate observed binding isotherm according to formula virtually
+
+  x <- dplyr::mutate(.data = x, .RL = !!formula.tools::lhs(formula))
+
+  # determine degree of binding polynom to fit
+
+  if (is.null(degree)) degree <- length(formula.tools::lhs.vars(formula))
+
+  degree <- as.integer(degree)
+
+  stopifnot(all(is.finite(degree), degree <= 3))  # currently only third degree implemented
+
+  # construct formula to fit
+
+  L0 <- formula.tools::rhs(formula)
+
+  # proceed according to whether INDEX is a column variable or not
+
+  INDEX <- rlang::enquo(INDEX)
+
+  if (rlang::quo_is_null(INDEX)) {
+
+    FML <- substitute(.RL ~ RL_isotherm(conc_L = L0, pK_d1, pK_d2, pK_d3, upper, lower,
+                                        type = T0), list(L0 = L0, T0 = type))
+
+    starts <- list(lower = c(0, 0.2), upper = c(0.5, 1.0),
+                   pK_d1 = log10(start_K_d), pK_d2 = log10(start_K_d),
+                   pK_d3 = log10(start_K_d))
+
+    iters <- list(lower = 3, upper = 3, pK_d1 = 5, pK_d2 = 4, pK_d3 = 3)
+
+    params <- list(lower = limits_lower, upper = limits_upper,
+                   pK_d1 = log10(limits_K_d), pK_d2 = log10(limits_K_d),
+                   pK_d3 = log10(limits_K_d))
+
+  } else {
+
+    INDEX <- rlang::as_name(INDEX)
+
+    stopifnot(INDEX %in% colnames(x))
+
+    FML <- substitute(.RL ~ RL_isotherm_shared(conc_L = L0, INDEX = I0,
+                                               pK_d1.x, pK_d1.y, pK_d2, pK_d3,
+                                               upper.x, lower.x, upper.y, lower.y,
+                                               type = T0),
+                      list(L0 = L0, I0 = x[[INDEX]], T0 = type))
+
+    starts <- list(lower.x = c(0, 0.2), upper.x = c(0.5, 1.0),
+                   lower.y = c(0, 0.2), upper.y = c(0.5, 1.0),
+                   pK_d1.x = log10(start_K_d), pK_d1.y = log10(start_K_d),
+                   pK_d2 = log10(start_K_d), pK_d3 = log10(start_K_d))
+
+    iters <- list(lower.x = 2, upper.x = 2,
+                  lower.y = 2, upper.y = 2,
+                  pK_d1.x = 3, pK_d1.y = 3,
+                  pK_d2 = 3, pK_d3 = 3)
+
+    params <- list(lower.x = limits_lower, upper.x = limits_upper,
+                   lower.y = limits_lower, upper.y = limits_upper,
+                   pK_d1.x = log10(limits_K_d), pK_d1.y = log10(limits_K_d),
+                   pK_d2 = log10(limits_K_d), pK_d3 = log10(limits_K_d))
+
+  }
 
   if (degree < 3) {
 

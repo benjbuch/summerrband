@@ -9,6 +9,7 @@ fit_binding_isotherm(
   formula,
   degree = NULL,
   type = "micro",
+  INDEX = NULL,
   limits_lower = c(-Inf, +Inf),
   limits_upper = c(-Inf, +Inf),
   limits_K_d = c(0, 1000),
@@ -28,6 +29,10 @@ from the number of variables on the LHS of \code{formula}. Up to third order
 binding polynomials are supported.}
 
 \item{type}{Either \code{"micro"} or \code{"macro"} (default).}
+
+\item{INDEX}{A column variable that shall be used to split the data into at
+most two sets, for which both will share higher order K. You will get other
+estimates as .x and .y fits.}
 
 \item{limits_lower}{Upper and lower bounds
 for the paramters to be fitted.}
@@ -56,27 +61,15 @@ If \code{type == "macro"}, the binding isotherm is computed for a macroscopic
 the intrinsic binding constants of the individual binding sites are computed
 temptatively using harmonic means.
 
+The grid start approach will take 540 points across all model estimates.
+
+If \code{INDEX} is a column name, the data is internally split into (exactly)
+two groups, for which the higher order K are shared. Note that the grid start
+approach will take 1296 points and computation may take longer.
+
 Up to third order binding polynoms can be computed.
 
 Note that all K_d values are internally log-transformed and returned as such
 to allow for an equal search depth across all orders of magnitude using
 \link[nls.multstart:nls_multstart]{nls.multstart::nls_multstart}.
-}
-\examples{
-library(dplyr)
-assay_file <- system.file("extdata", "gel_03.txt", package = "summerrband")
-assay_data <- iqtl_meta(assay_file, list(conc = c(2^seq(10, 0), 0)))
-
-test3 <- assay_data \%>\%
-  group_by(gel_id) \%>\%
-  tidyr::pivot_wider(names_from = band_id, values_from = vol_frac,
-  id_cols = c(conc, group_vars(.))) \%>\%
-  model_cleanly_groupwise(fit_binding_isotherm, formula = band_1 + 2 * band_2 ~ conc,
-                          newdata = data.frame(conc = 10^seq(-3, 3, length.out = 100)))
-
-tidyr::unnest(test3, tidy)
-
-library(ggplot2)
-model_display(test3) + scale_x_log10()
-
 }
