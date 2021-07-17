@@ -76,7 +76,7 @@ gpf_micro <- function(degree = 2, params = letters[seq(degree)], xname = "x", kn
 #' @export
 gpf_fraction_bound <- function(x, binding_constants, type = "macro") {
 
-  binding_constants <- sort(binding_constants, decreasing = FALSE)
+  binding_constants <- sort(binding_constants[which(binding_constants > 0)])
 
   if (type == "macro") {
 
