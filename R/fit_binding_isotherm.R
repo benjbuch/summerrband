@@ -146,7 +146,7 @@ gpf_fraction_plot <- function(x = 10^seq(-6, 2, length.out = 100), ...) {
   graphics::plot(x, y, log = "x", type = "l", ylab = expression(theta),
                  ylim = c(0, attr(y, "degree")))
 
-  graphics::points(x, c(0, diff(y)) / max(diff(y)), type = "l", col = "gray")
+  graphics::points(x[-1], diff(y) / max(diff(y)), type = "l", col = "gray")
 
   graphics::axis(side = 3, at = 1 / attr(y, "params")[1:attr(y, "degree")],
                  lwd = 0, lwd.ticks = 1)
