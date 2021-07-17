@@ -153,13 +153,17 @@ gpf_fraction_plot <- function(x = 10^seq(-6, 2, length.out = 100), ...) {
 #' Quick overview plots to demonstrate harmonic mean
 #'
 #' @noRd
-gpf_fraction_micro_macro <- function(a, b, c = 0, x = 10^seq(-6, 2, length.out = 100)) {
+gpf_fraction_micro_macro <- function(a, b, c = 0, x = 10^seq(-6, 2, length.out = 100),
+                                     correlation = c(ab = 2, ac = 2, bc = 2, abc = 6)) {
+
+  correlation <- c(correlation, c(ab = 0, bc = 0, ac = 0, abc = 0)[setdiff(
+    c("ab", "bc", "ac", "abc"), names(correlation))])
 
   K1 = a + b + c
-  ab = 2 * a * b
-  ac = 2 * a * c
-  bc = 2 * b * c
-  abc = 6 * a * b * c
+  ab = unname(correlation["ab"] * a * b)
+  ac = unname(correlation["ac"] * a * c)
+  bc = unname(correlation["bc"] * b * c)
+  abc = unname(correlation["abc"] * a * b * c)
   K2 = (ab + ac + bc) / K1
   K3 = abc / (K2 * K1)
 
@@ -200,6 +204,8 @@ gpf_fraction_micro_macro <- function(a, b, c = 0, x = 10^seq(-6, 2, length.out =
 #' @param degree The order of the binding polynomial; if \code{NULL} it is inferred
 #' from the number of variables on the LHS of \code{formula}. Up to third order
 #' binding polynomials are supported.
+#' @param correlation The correlation factors between the microscopic binding
+#' constants; must be a named vector with "ab", "bc", "ac", "abc" as names.
 #' @param start_K_d Upper and lower bounds of the K_d grid-start
 #' parameters (see \link[nls.multstart:nls_multstart]{nls.multstart::nls_multstart}).
 #'
@@ -211,9 +217,14 @@ gpf_fraction_micro_macro <- function(a, b, c = 0, x = 10^seq(-6, 2, length.out =
 #' indicates a second degree binding polynom.
 #'
 #' If \code{type == "macro"}, the binding isotherm is computed for a macroscopic
-#' (thermodynamic) process using \code{\link{gpf_macro}}. If \code{type == "micro"},
+#' (thermodynamic) process using \code{\link{gpf_macro}}.
+#'
+#' If \code{type == "micro"},
 #' the intrinsic binding constants of the individual binding sites are computed
-#' temptatively using harmonic means.
+#' temptatively using correlations that yield to harmonic means. (In any system
+#' this is non-sensical.) The vector must be strictly named with "ab", "bc", "ac",
+#' "abc" as appropriate. Missing values will be set to 0, i.e., the result
+#' will be the same as for \code{type == "macro"}.
 #'
 #' The grid start approach will take 540 points across all model estimates.
 #'
@@ -259,12 +270,12 @@ gpf_fraction_micro_macro <- function(a, b, c = 0, x = 10^seq(-6, 2, length.out =
 #' #   model_cleanly_groupwise(fit_binding_isotherm, formula = band_1 + 2 * band_2 ~ conc,
 #' #                           INDEX = index_col,
 #' #                           newdata = data.frame(conc = 10^seq(-3, 3, length.out = 100)))
-#' # }
 #'
 #' @export
-fit_binding_isotherm <- function(x, formula, degree = NULL, type = "micro", INDEX = NULL,
+fit_binding_isotherm <- function(x, formula, degree = NULL, type = "macro", INDEX = NULL,
                                  limits_lower = c(-Inf, +Inf), limits_upper = c(-Inf, +Inf),
-                                 limits_K_d = c(0, 1e3), start_K_d = 10^c(-1, 4)) {
+                                 limits_K_d = c(0, 1e3), start_K_d = 10^c(-1, 4),
+                                 correlation = c(ab = 2, ac = 2, bc = 2, abc = 6)) {
 
   # function to fit an isotherm
   #
@@ -274,13 +285,16 @@ fit_binding_isotherm <- function(x, formula, degree = NULL, type = "micro", INDE
 
     if (type == "micro") {
 
-      a = 10^(-pK_d1)
-      b = 10^(-pK_d2)
-      c = 10^(-pK_d3)
-      ab = 2 * a * b
-      ac = 2 * a * c
-      bc = 2 * b * c
-      abc = 6 * a * b * c
+      correlation <- c(correlation, c(ab = 0, bc = 0, ac = 0, abc = 0)[setdiff(
+        c("ab", "bc", "ac", "abc"), names(correlation))])
+
+      a <- 10^(-pK_d1)
+      b <- 10^(-pK_d2)
+      c <- 10^(-pK_d3)
+      ab <- unname(correlation["ab"] * a * b)
+      ac <- unname(correlation["ac"] * a * c)
+      bc <- unname(correlation["bc"] * b * c)
+      abc <- unname(correlation["abc"] * a * b * c)
 
       params <- c(a = a, b = b, c = c, ab = ab, ac = ac, bc = bc, abc = abc)
 

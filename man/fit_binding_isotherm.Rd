@@ -8,12 +8,13 @@ fit_binding_isotherm(
   x,
   formula,
   degree = NULL,
-  type = "micro",
+  type = "macro",
   INDEX = NULL,
   limits_lower = c(-Inf, +Inf),
   limits_upper = c(-Inf, +Inf),
   limits_K_d = c(0, 1000),
-  start_K_d = 10^c(-1, 4)
+  start_K_d = 10^c(-1, 4),
+  correlation = c(ab = 2, ac = 2, bc = 2, abc = 6)
 )
 }
 \arguments{
@@ -45,6 +46,9 @@ for the paramters to be fitted.}
 
 \item{start_K_d}{Upper and lower bounds of the K_d grid-start
 parameters (see \link[nls.multstart:nls_multstart]{nls.multstart::nls_multstart}).}
+
+\item{correlation}{The correlation factors between the microscopic binding
+constants; must be a named vector with "ab", "bc", "ac", "abc" as names.}
 }
 \description{
 Fit binding isotherm
@@ -57,9 +61,14 @@ used to determine the binding degree: \code{bound_1 + 2 * bound_2 ~ conc}
 indicates a second degree binding polynom.
 
 If \code{type == "macro"}, the binding isotherm is computed for a macroscopic
-(thermodynamic) process using \code{\link{gpf_macro}}. If \code{type == "micro"},
+(thermodynamic) process using \code{\link{gpf_macro}}.
+
+If \code{type == "micro"},
 the intrinsic binding constants of the individual binding sites are computed
-temptatively using harmonic means.
+temptatively using correlations that yield to harmonic means. (In any system
+this is non-sensical.) The vector must be strictly named with "ab", "bc", "ac",
+"abc" as appropriate. Missing values will be set to 0, i.e., the result
+will be the same as for \code{type == "macro"}.
 
 The grid start approach will take 540 points across all model estimates.
 
@@ -72,4 +81,38 @@ Up to third order binding polynoms can be computed.
 Note that all K_d values are internally log-transformed and returned as such
 to allow for an equal search depth across all orders of magnitude using
 \link[nls.multstart:nls_multstart]{nls.multstart::nls_multstart}.
+}
+\examples{
+library(dplyr)
+assay_file <- system.file("extdata", "gel_03.txt", package = "summerrband")
+assay_data <- iqtl_meta(assay_file, list(conc = c(2^seq(10, 0), 0)))
+
+test3 <- assay_data \%>\%
+  group_by(gel_id) \%>\%
+  tidyr::pivot_wider(names_from = band_id, values_from = vol_frac,
+  id_cols = c(conc, group_vars(.))) \%>\%
+  model_cleanly_groupwise(fit_binding_isotherm, formula = band_1 + 2 * band_2 ~ conc,
+                          newdata = data.frame(conc = 10^seq(-3, 3, length.out = 100)))
+
+tidyr::unnest(test3, tidy)
+
+library(ggplot2)
+model_display(test3) + scale_x_log10()
+
+# fitting with shared estimates
+assay_data_2 <- assay_data \%>\%
+  group_by(gel_id) \%>\%
+  tidyr::pivot_wider(names_from = band_id, values_from = vol_frac,
+  id_cols = c(conc, group_vars(.))) \%>\%
+  mutate(index_col = rep(c("a", "b"), times = 6))
+
+# these examples will take some computation time ...
+#
+# fit_binding_isotherm(assay_data_2, formula = band_1 + 2 * band_2 ~ conc, INDEX = index_col)
+#
+# test4 <- assay_data_2 \%>\%
+#   model_cleanly_groupwise(fit_binding_isotherm, formula = band_1 + 2 * band_2 ~ conc,
+#                           INDEX = index_col,
+#                           newdata = data.frame(conc = 10^seq(-3, 3, length.out = 100)))
+
 }
