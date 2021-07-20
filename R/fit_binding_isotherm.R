@@ -280,73 +280,6 @@ fit_binding_isotherm <- function(x, formula, degree = NULL, type = "macro", INDE
                                  limits_K_d = c(0, 1e3), start_K_d = 10^c(-1, 4),
                                  correlation = c(ab = 2, ac = 2, bc = 2, abc = 6)) {
 
-  # function to fit an isotherm
-  #
-  RL_isotherm <- function(conc_L, pK_d1, pK_d2, pK_d3, upper, lower, type = "macro") {
-
-    # use log-transformed K_d to allow equal search space of nls_multstart
-
-    if (type == "micro") {
-
-      correlation <- c(correlation, c(ab = 0, bc = 0, ac = 0, abc = 0)[setdiff(
-        c("ab", "bc", "ac", "abc"), names(correlation))])
-
-      a <- 10^(-pK_d1)
-      b <- 10^(-pK_d2)
-      c <- 10^(-pK_d3)
-      ab <- unname(correlation["ab"] * a * b)
-      ac <- unname(correlation["ac"] * a * c)
-      bc <- unname(correlation["bc"] * b * c)
-      abc <- unname(correlation["abc"] * a * b * c)
-
-      params <- c(a = a, b = b, c = c, ab = ab, ac = ac, bc = bc, abc = abc)
-
-    } else {
-
-      params <- c(K1 = 10^(-pK_d1), K2 = 10^(-pK_d2), K3 = 10^(-pK_d3))
-
-    }
-
-    lower + (upper - lower) * gpf_fraction_bound(
-      x = conc_L, binding_constants = params, type = type)
-
-  }
-
-  # function to fit an isotherm with shared pK_d2 and pK_d3
-  #
-  RL_isotherm_shared <- function(conc_L, INDEX = NULL,
-                                 pK_d1.x, pK_d1.y = pK_d1.x, pK_d2, pK_d3,
-                                 upper.x, lower.x,
-                                 upper.y = upper.x, lower.y = lower.y,
-                                 type = "macro") {
-
-    INDEX <- as.factor(INDEX)
-
-    if (length(levels(INDEX)) == 2) {
-
-      conc_L <- split(conc_L, INDEX, drop = FALSE)
-
-      rlx <- RL_isotherm(conc_L[[1]], pK_d1.x, pK_d2, pK_d3, upper.x, lower.x, type = type)
-      rly <- RL_isotherm(conc_L[[2]], pK_d1.y, pK_d2, pK_d3, upper.y, lower.y, type = type)
-
-      res <- list(rlx, rly)
-      names(res) <- names(conc_L)
-
-      res <- unsplit(res, INDEX, drop = TRUE)
-
-    } else {
-
-      if(length(levels(INDEX)) > 2) warning("Data splits into more than 2 groups;
-                                             not grouping at all now.")
-
-      res <- RL_isotherm(conc_L, pK_d1.x, pK_d2, pK_d3, upper.x, lower.x, type = type)
-
-    }
-
-    res
-
-  }
-
   # generate observed binding isotherm according to formula virtually
 
   x <- dplyr::mutate(.data = x, .RL = !!formula.tools::lhs(formula))
@@ -370,7 +303,8 @@ fit_binding_isotherm <- function(x, formula, degree = NULL, type = "macro", INDE
   if (rlang::quo_is_null(INDEX)) {
 
     FML <- substitute(.RL ~ RL_isotherm(conc_L = L0, pK_d1, pK_d2, pK_d3, upper, lower,
-                                        type = T0), list(L0 = L0, T0 = type))
+                                        type = T0, correlation = C0),
+                      list(L0 = L0, T0 = type, C0 = correlation))
 
     starts <- list(lower = c(0, 0.2), upper = c(0.5, 1.0),
                    pK_d1 = log10(start_K_d), pK_d2 = log10(start_K_d),
@@ -391,8 +325,8 @@ fit_binding_isotherm <- function(x, formula, degree = NULL, type = "macro", INDE
     FML <- substitute(.RL ~ RL_isotherm_shared(conc_L = L0, INDEX = I0,
                                                pK_d1.x, pK_d1.y, pK_d2, pK_d3,
                                                upper.x, lower.x, upper.y, lower.y,
-                                               type = T0),
-                      list(L0 = L0, I0 = x[[INDEX]], T0 = type))
+                                               type = T0, correlation = C0),
+                      list(L0 = L0, I0 = x[[INDEX]], T0 = type, C0 = correlation))
 
     starts <- list(lower.x = c(0, 0.2), upper.x = c(0.5, 1.0),
                    lower.y = c(0, 0.2), upper.y = c(0.5, 1.0),
@@ -440,3 +374,101 @@ fit_binding_isotherm <- function(x, formula, degree = NULL, type = "macro", INDE
                     supp_errors = "Y"))
 
 }
+
+#' Function to fit an isotherm
+#'
+#' @noRd
+RL_isotherm <- function(conc_L, pK_d1, pK_d2, pK_d3, upper, lower,
+                        correlation = c(ab = 1, bc = 1, ac = 1, abc = 1),
+                        type = "macro") {
+
+  # use log-transformed K_d to allow equal search space of nls_multstart
+
+  if (type == "micro") {
+
+    correlation <- c(correlation, c(ab = 0, bc = 0, ac = 0, abc = 0)[setdiff(
+      c("ab", "bc", "ac", "abc"), names(correlation))])
+
+    a <- 10^(-pK_d1)
+    b <- 10^(-pK_d2)
+    c <- 10^(-pK_d3)
+    ab <- unname(correlation["ab"] * a * b)
+    ac <- unname(correlation["ac"] * a * c)
+    bc <- unname(correlation["bc"] * b * c)
+    abc <- unname(correlation["abc"] * a * b * c)
+
+    params <- c(a = a, b = b, c = c, ab = ab, ac = ac, bc = bc, abc = abc)
+
+  } else {
+
+    params <- c(K1 = 10^(-pK_d1), K2 = 10^(-pK_d2), K3 = 10^(-pK_d3))
+
+  }
+
+  lower + (upper - lower) * gpf_fraction_bound(
+    x = conc_L, binding_constants = params, type = type)
+
+}
+
+#' Function to fit an isotherm with shared pK_d2 and pK_d3
+#'
+#' @noRd
+RL_isotherm_shared <- function(conc_L, INDEX = NULL,
+                               pK_d1.x, pK_d1.y = pK_d1.x, pK_d2, pK_d3,
+                               upper.x, lower.x,
+                               upper.y = upper.x, lower.y = lower.y,
+                               type = "macro", correlation = c(ab = 0, bc = 0, ac = 0, abc = 0)) {
+
+  INDEX <- as.factor(INDEX)
+
+  if (length(levels(INDEX)) == 2) {
+
+    conc_L <- split(conc_L, INDEX, drop = FALSE)
+
+    rlx <- RL_isotherm(conc_L[[1]], pK_d1.x, pK_d2, pK_d3, upper.x, lower.x,
+                       type = type, correlation = correlation)
+    rly <- RL_isotherm(conc_L[[2]], pK_d1.y, pK_d2, pK_d3, upper.y, lower.y,
+                       type = type, correlation = correlation)
+
+    res <- list(rlx, rly)
+    names(res) <- names(conc_L)
+
+    res <- unsplit(res, INDEX, drop = TRUE)
+
+  } else {
+
+    if(length(levels(INDEX)) > 2) warning("Data splits into more than 2 groups;
+                                             not grouping at all now.")
+
+    res <- RL_isotherm(conc_L, pK_d1.x, pK_d2, pK_d3, upper.x, lower.x,
+                       type = type, correlation = correlation)
+
+  }
+
+  res
+
+}
+
+#' Augmenting function for shared isotherm fits
+#'
+#' @param x A fitted model returned from \code{\link{fit_binding_isotherm}}
+#' @param newdata The new data to fit; must use the same column names that
+#' were used to create the model.
+#' @inheritParams fit_binding_isotherm
+#'
+#' @export
+augment_shared_isotherms <- function(x, newdata, INDEX = NULL) {
+
+  INDEX <- rlang::enquo(INDEX)
+  INDEX <- rlang::as_name(INDEX)
+
+  stopifnot(INDEX %in% colnames(newdata))
+
+  new.call <- as.list(formula.tools::rhs(x$m$formula()))
+  new.call$INDEX <- newdata[[INDEX]]
+  new.call <- as.call(new.call)
+
+  cbind(newdata, .fitted = with(newdata, eval(new.call, envir = as.list(coef(x)))))
+
+}
+
