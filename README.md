@@ -4,6 +4,8 @@
 # summerrband
 
 <!-- badges: start -->
+
+[![DOI](https://zenodo.org/badge/371598132.svg)](https://zenodo.org/badge/latestdoi/371598132)
 <!-- badges: end -->
 
 `summerrband` plays for you gel-shift data from “tapes” recorded on
@@ -197,7 +199,7 @@ my_data %>%
   model_cleanly_groupwise(fit_Kd, formula = vol_frac ~ conc) %>% 
   dplyr::select(tidy) %>% tidyr::unnest(tidy)
 #> Adding missing grouping variables: `protein`, `ligand`
-#> # A tibble: 3 x 7
+#> # A tibble: 3 × 7
 #> # Groups:   protein, ligand [1]
 #>   protein ligand term  estimate std.error statistic  p.value
 #>   <chr>   <chr>  <chr>    <dbl>     <dbl>     <dbl>    <dbl>
@@ -217,12 +219,12 @@ my_data %>%
   model_cleanly_groupwise(fit_Kd, formula = vol_frac ~ conc, R0 = 2.0) %>% 
   dplyr::select(tidy) %>% tidyr::unnest(tidy)
 #> Adding missing grouping variables: `protein`, `ligand`
-#> # A tibble: 3 x 7
+#> # A tibble: 3 × 7
 #> # Groups:   protein, ligand [1]
 #>   protein ligand term  estimate std.error statistic  p.value
 #>   <chr>   <chr>  <chr>    <dbl>     <dbl>     <dbl>    <dbl>
 #> 1 protA   DNA1   lower   0.0617   0.00985      6.26 1.48e- 4
-#> 2 protA   DNA1   upper   0.425    0.0144      29.5  2.90e-10
+#> 2 protA   DNA1   upper   0.789    0.0245      32.2  1.33e-10
 #> 3 protA   DNA1   K_d   118.      14.4          8.15 1.91e- 5
 ```
 
